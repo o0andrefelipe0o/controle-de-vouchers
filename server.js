@@ -14,17 +14,20 @@ function readVouchersFile() {
     const lines = data.split('\n').map(line => line.trim()).filter(line => line !== '');
 
     const validity = lines[0].replace('Tempo: ', '');  // Tempo de validade do voucher (primeira linha)
-    const vouchers = lines.slice(1).filter(line => line.startsWith('Vouchers:') === false);  // Vouchers (linhas subsequentes)
+    const quantity = parseInt(lines[1].replace('Quantidade: ', ''));  // Quantidade de vouchers (segunda linha)
+    const vouchers = lines.slice(2).filter(line => line.startsWith('Vouchers:') === false);  // Vouchers (linhas subsequentes)
 
     return {
         validity,
+        quantity,
         vouchers
     };
 }
 
 // Função para salvar os vouchers no arquivo 'vouchers.txt'
 function saveVouchersToFile(validity, vouchers) {
-    const data = `Tempo: ${validity}\nVouchers:\n${vouchers.join('\n')}`;
+    const quantity = vouchers.length;
+    const data = `Tempo: ${validity}\nQuantidade: ${quantity}\nVouchers:\n${vouchers.join('\n')}`;
     fs.writeFileSync('vouchers.txt', data, 'utf-8');
 }
 
@@ -33,7 +36,7 @@ let voucherTime = null;
 let voucherValidity = null;
 
 app.get('/getVoucher', (req, res) => {
-    const { validity, vouchers } = readVouchersFile();
+    const { validity, quantity, vouchers } = readVouchersFile();
 
     if (!voucherValidity) {
         voucherValidity = validity;  // Define o tempo de validade global para o primeiro uso

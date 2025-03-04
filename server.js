@@ -26,8 +26,13 @@ function readVouchersFile() {
 
 // Função para salvar os vouchers no arquivo 'vouchers.txt'
 function saveVouchersToFile(validity, vouchers) {
-    const quantity = vouchers.length;
-    const data = `Tempo: ${validity}\nQuantidade: ${quantity}\nVouchers:\n${vouchers.join('\n')}`;
+    // Primeiro, conta os vouchers reais
+    const quantity = vouchers.filter(v => v.trim() !== '').length;
+
+    // Apenas zera o tempo se a quantidade for realmente zero
+    const newValidity = quantity === 0 ? '00:00:00' : validity;
+
+    const data = `Tempo: ${newValidity}\nQuantidade: ${quantity}\nVouchers:\n${vouchers.join('\n')}`;
     fs.writeFileSync('vouchers.txt', data, 'utf-8');
 }
 
@@ -53,13 +58,18 @@ app.get('/getVoucher', (req, res) => {
             message: "Você ainda tem um voucher ativo!",
             voucher: activeVoucher,
             expiresAt: voucherTime.format('DD/MM/YYYY [às] HH:mm:ss'),
-            timeLeft: `${hours}h ${minutes}m ${seconds}s`
+            timeLeft: `${hours}h ${minutes}m ${seconds}s`,
+            quantity: quantity, // Quantidade de vouchers disponível
+            validity: validity // Tempo de validade
         });
     }
 
     if (vouchers.length > 0) {
         activeVoucher = vouchers.pop();
         voucherTime = moment().add(moment.duration(voucherValidity));
+        
+        // Atualiza a quantidade de vouchers restantes
+        const updatedQuantity = vouchers.length;
         saveVouchersToFile(voucherValidity, vouchers);
 
         // Cálculo do tempo restante
@@ -72,14 +82,18 @@ app.get('/getVoucher', (req, res) => {
             message: "Voucher ativado com sucesso!",
             voucher: activeVoucher,
             expiresAt: voucherTime.format('DD/MM/YYYY [às] HH:mm:ss'),
-            timeLeft: `${hours}h ${minutes}m ${seconds}s`
+            timeLeft: `${hours}h ${minutes}m ${seconds}s`,
+            quantity: updatedQuantity, // Quantidade de vouchers
+            validity: validity // Tempo de validade
         });
     }
 
-    res.status(400).json({ 
-        message: "Não há voucher disponível!", 
+    res.status(400).json({
+        message: "Não há voucher disponível!",
         expiresAt: "Não disponível",
-        timeLeft: "Não disponível"
+        timeLeft: "Não disponível",
+        quantity: quantity, // Quantidade de vouchers disponível
+        validity: validity // Tempo de validade
     });
 });
 

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Vouchers</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .voucher-info {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Controle de Vouchers</h1>
+        <button id="getVoucherButton">Pedir Voucher</button>
+        <div id="voucherInfo" class="voucher-info"></div>
+    </div>
+
+    <script>
+        let intervalId = null;
+
+        async function updateVoucher() {
+            const response = await fetch("http://localhost:3000/getVoucher");
+            const data = await response.json();
+            const voucherInfoDiv = document.getElementById("voucherInfo");
+
+            if (response.ok) {
+                // Exibe os detalhes do voucher gerado
+                voucherInfoDiv.innerHTML = `
+                    <p><strong>Voucher gerado:</strong> ${data.voucher}</p>
+                    <p><strong>Expira em:</strong> ${data.expiresAt}</p>
+                `;
+            } else {
+                // Exibe a mensagem de erro ou status
+                voucherInfoDiv.innerHTML = `
+                    <p class="error">${data.message}</p>
+                    ${data.voucher ? `<p><strong>Voucher atual:</strong> ${data.voucher}</p><p><strong>Tempo restante:</strong> ${data.timeLeft}</p>` : ''}
+                `;
+            }
+        }
+
+        async function handleVoucherRequest() {
+            // Faz uma requisição para tentar pegar o voucher
+            const response = await fetch("http://localhost:3000/getVoucher");
+            const data = await response.json();
+            const voucherInfoDiv = document.getElementById("voucherInfo");
+
+            if (response.ok) {
+                // Se a resposta for OK (voucher foi gerado)
+                voucherInfoDiv.innerHTML = `
+                    <p><strong>Voucher gerado:</strong> ${data.voucher}</p>
+                    <p><strong>Expira em:</strong> ${data.expiresAt}</p>
+                `;
+            } else {
+                // Se o voucher ainda estiver ativo, exibe a mensagem de erro e ativa a atualização contínua
+                voucherInfoDiv.innerHTML = `
+                    <p class="error">${data.message}</p>
+                    ${data.voucher ? `<p><strong>Voucher atual:</strong> ${data.voucher}</p><p><strong>Tempo restante:</strong> ${data.timeLeft}</p>` : ''}
+                `;
+
+                // Se o voucher estiver ativo, iniciar a contagem regressiva automática
+                if (!intervalId) {
+                    intervalId = setInterval(async () => {
+                        await updateVoucher();
+                    }, 1000);
+                }
+            }
+        }
+
+        document.getElementById("getVoucherButton").addEventListener("click", handleVoucherRequest);
+    </script>
+
+</body>
+</html>

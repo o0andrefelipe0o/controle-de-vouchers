@@ -100,10 +100,8 @@
 
                 updateVoucherInfo(data, response.status); // Atualiza a interface com os dados
 				
-				// Se houver um voucher válido
-                //if (response.ok) {
                 startCountdown(data.timeLeft); // Inicia a contagem regressiva
-                //}
+				
             } catch (error) {
                 console.error("Erro ao buscar voucher:", error);
 				// Exibe a mensagem padrão caso ocorra um erro
@@ -166,6 +164,24 @@
 		
         /* Adiciona um evento de clique ao botão para solicitar um novo voucher */
 		document.getElementById("getVoucherButton").addEventListener("click", handleVoucherRequest);
+		
+		/* Mantem a página web atualizada com novas informações, mesmo que o servidor tenha sido reiniciado */
+		setInterval(async () => {
+			try {
+				const response = await fetch("http://localhost:3000/healthcheck");
+				if (response.ok) {
+					const serverStartTime = await response.text();
+					const lastLoadTime = sessionStorage.getItem("serverStartTime");
+
+					if (lastLoadTime !== serverStartTime) {
+						sessionStorage.setItem("serverStartTime", serverStartTime);
+						location.reload(); // Recarrega a página se o servidor foi reiniciado
+					}
+				}
+			} catch (error) {
+				console.warn("Erro ao verificar servidor:", error);
+			}
+		}, 5000); // Verifica a cada 5 segundos
 	</script>
     
     <footer>

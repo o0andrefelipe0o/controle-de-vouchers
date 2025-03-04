@@ -5,6 +5,7 @@ const cors = require('cors'); // Middleware para habilitar CORS (Cross-Origin Re
 const bodyParser = require('body-parser'); // Middleware para parsing do corpo das requisições
 const fs = require('fs'); // Módulo para manipulação de arquivos no sistema
 const moment = require('moment'); // Biblioteca para manipulação e formatação de datas e horas
+const serverStartTime = Date.now(); // Armazena o tempo de início do servidor
 
 // Middleware para permitir requisições de outras origens
 app.use(cors()); // Permite que a API seja acessada por outras origens
@@ -76,14 +77,17 @@ let activeVoucher = null; // Variável para armazenar o voucher ativo
 let voucherTime = null; // Variável para armazenar o tempo de expiração do voucher
 let voucherValidity = null; // Variável para armazenar a validade do voucher
 
+// Rota para monitorar se o servidor está online e detectar reinicializações.
+app.get('/healthcheck', (req, res) => {
+    res.send(serverStartTime.toString()); // Retorna o tempo de início do servidor
+});
+
 // Rota para obter um voucher, iniciada ao pressionar o botão para pedir voucher
 app.get('/getVoucher', (req, res) => {
     const { validity, quantity, vouchers } = readVouchersFile(); // Lê os dados do arquivo
 
-    // Define a validade do voucher caso ainda não tenha sido atribuída
-    if (!voucherValidity) {
-        voucherValidity = validity;
-    }
+    // Atualiza a validade do voucher a cada requisição
+	voucherValidity = validity;
 
     // Se já existe um voucher ativo e ainda não expirou, retorna um erro depois de apertar o botão
     if (activeVoucher && moment().isBefore(voucherTime)) {

@@ -94,11 +94,12 @@
 			const voucherInfoDiv = document.getElementById("voucherInfo");
 			const isError = status !== 200; // Se não for 200 (sucesso), trata como erro
 
-			voucherInfoDiv.innerHTML = 
-				`<p class="${isError ? 'error' : 'success'}">${data.message}</p>
+			voucherInfoDiv.innerHTML = `
+				<p class="${isError ? 'error' : 'success'}">${data.message}</p>
 				<p><strong>Voucher atual:</strong> ${data.voucher || 'Não disponível'}</p>
 				<p><strong>Expira em:</strong> ${data.expiresAt || 'Não disponível'}</p>
-				<p><strong>Tempo restante:</strong> <span id="timeLeft">${data.timeLeft || 'Não disponível'}</span></p>`;
+				<p><strong>Tempo restante:</strong> <span id="timeLeft">${data.timeLeft || 'Não disponível'}</span></p>
+			`;
 		}
 
 		function startCountdown(timeLeft) {

@@ -11,9 +11,10 @@ app.use(bodyParser.json());
 // Função para ler o arquivo 'vouchers.txt'
 function readVouchersFile() {
     const data = fs.readFileSync('vouchers.txt', 'utf-8');
-    const lines = data.split('\n').map(line => line.trim());
-    const validity = lines[0];  // Tempo de validade do voucher (primeira linha)
-    const vouchers = lines.slice(1);  // Vouchers (linhas subsequentes)
+    const lines = data.split('\n').map(line => line.trim()).filter(line => line !== '');
+
+    const validity = lines[0].replace('Tempo: ', '');  // Tempo de validade do voucher (primeira linha)
+    const vouchers = lines.slice(1).filter(line => line.startsWith('Vouchers:') === false);  // Vouchers (linhas subsequentes)
 
     return {
         validity,
@@ -23,7 +24,7 @@ function readVouchersFile() {
 
 // Função para salvar os vouchers no arquivo 'vouchers.txt'
 function saveVouchersToFile(validity, vouchers) {
-    const data = [validity, ...vouchers].join('\n');
+    const data = `Tempo: ${validity}\nVouchers:\n${vouchers.join('\n')}`;
     fs.writeFileSync('vouchers.txt', data, 'utf-8');
 }
 

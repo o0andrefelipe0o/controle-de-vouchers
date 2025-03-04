@@ -47,6 +47,11 @@
             margin-top: 20px;
             font-size: 16px;
         }
+		
+		.success {
+			color: green;
+			font-weight: bold;
+		}
 
         .error {
             color: red;
@@ -61,7 +66,6 @@
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1>Controle de Vouchers</h1>
         <button id="getVoucherButton">Pedir Voucher</button>
@@ -69,57 +73,26 @@
     </div>
 
     <script>
-        let intervalId = null;
-
-        async function updateVoucher() {
-            const response = await fetch("http://localhost:3000/getVoucher");
-            const data = await response.json();
-            const voucherInfoDiv = document.getElementById("voucherInfo");
-
-            if (response.ok) {
-                // Exibe os detalhes do voucher gerado
-                voucherInfoDiv.innerHTML = `
-                    <p><strong>Voucher gerado:</strong> ${data.voucher}</p>
-                    <p><strong>Expira em:</strong> ${data.expiresAt}</p>
-                `;
-            } else {
-                // Exibe a mensagem de erro ou status
-                voucherInfoDiv.innerHTML = `
-                    <p class="error">${data.message}</p>
-                    ${data.voucher ? `<p><strong>Voucher atual:</strong> ${data.voucher}</p><p><strong>Tempo restante:</strong> ${data.timeLeft}</p>` : ''}
-                `;
-            }
-        }
-
         async function handleVoucherRequest() {
-            // Faz uma requisição para tentar pegar o voucher
-            const response = await fetch("http://localhost:3000/getVoucher");
-            const data = await response.json();
-            const voucherInfoDiv = document.getElementById("voucherInfo");
+		try {
+			const response = await fetch("http://localhost:3000/getVoucher");
+			const data = await response.json();
+			const voucherInfoDiv = document.getElementById("voucherInfo");
 
-            if (response.ok) {
-                // Se a resposta for OK (voucher foi gerado)
-                voucherInfoDiv.innerHTML = `
-                    <p><strong>Voucher gerado:</strong> ${data.voucher}</p>
-                    <p><strong>Expira em:</strong> ${data.expiresAt}</p>
-                `;
-            } else {
-                // Se o voucher ainda estiver ativo, exibe a mensagem de erro e ativa a atualização contínua
-                voucherInfoDiv.innerHTML = `
-                    <p class="error">${data.message}</p>
-                    ${data.voucher ? `<p><strong>Voucher atual:</strong> ${data.voucher}</p><p><strong>Tempo restante:</strong> ${data.timeLeft}</p>` : ''}
-                `;
+			voucherInfoDiv.innerHTML = `
+				<p class="${response.ok ? 'success' : 'error'}">${data.message}</p>
+				<p><strong>Voucher atual:</strong> ${data.voucher || 'Não disponível'}</p>
+				<p><strong>Expira em:</strong> ${data.expiresAt || 'Não disponível'}</p>
+				<p><strong>Tempo restante:</strong> ${data.timeLeft || 'Não disponível'}</p>
+			`;
 
-                // Se o voucher estiver ativo, iniciar a contagem regressiva automática
-                if (!intervalId) {
-                    intervalId = setInterval(async () => {
-                        await updateVoucher();
-                    }, 1000);
-                }
-            }
-        }
+		} catch (error) {
+			console.error("Erro ao buscar voucher:", error);
+			document.getElementById("voucherInfo").innerHTML = "<p class='error'>Erro ao tentar buscar o voucher.</p>";
+		}
+	}
 
-        document.getElementById("getVoucherButton").addEventListener("click", handleVoucherRequest);
+	document.getElementById("getVoucherButton").addEventListener("click", handleVoucherRequest);
     </script>
 
 </body>

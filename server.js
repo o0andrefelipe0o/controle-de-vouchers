@@ -34,7 +34,7 @@ let voucherValidity = null;
 app.get('/getVoucher', (req, res) => {
     // Lê os vouchers e a validade do arquivo
     const { validity, vouchers } = readVouchersFile();
-    
+	
     if (!voucherValidity) {
         voucherValidity = validity;  // Define o tempo de validade global para o primeiro uso
     }
@@ -46,9 +46,11 @@ app.get('/getVoucher', (req, res) => {
         let minutes = Math.floor((timeLeft % 3600) / 60);
         let seconds = timeLeft % 60;
 
+		// Cálculo do tempo restante
         return res.status(400).json({
             message: "Você ainda tem um voucher ativo!",
             voucher: activeVoucher,
+            expiresAt: voucherTime.format('DD/MM/YYYY [às] HH:mm:ss'),
             timeLeft: `${hours}h ${minutes}m ${seconds}s`
         });
     }
@@ -58,15 +60,29 @@ app.get('/getVoucher', (req, res) => {
         activeVoucher = vouchers.pop();  // Retira o último voucher da lista
         voucherTime = moment().add(moment.duration(voucherValidity));  // Define o tempo de validade do voucher
         saveVouchersToFile(voucherValidity, vouchers);  // Atualiza o arquivo removendo o voucher retirado
-        return res.json({
-            message: "Voucher gerado com sucesso!",
-            voucher: activeVoucher,
-            expiresAt: voucherTime.format('DD/MM/YYYY [às] HH:mm:ss')
-        });
-    }
 
-    res.status(400).json({ message: "Nenhum voucher disponível!" });
+		// Cálculo do tempo restante
+		let totalSeconds = moment(voucherTime).diff(moment(), 'seconds');
+		let hours = Math.floor(totalSeconds / 3600);
+		let minutes = Math.floor((totalSeconds % 3600) / 60);
+		let seconds = totalSeconds % 60;
+
+		return res.json({
+			message: "Voucher ativado com sucesso!",
+			voucher: activeVoucher,
+			expiresAt: voucherTime.format('DD/MM/YYYY [às] HH:mm:ss'),
+			timeLeft: `${hours}h ${minutes}m ${seconds}s`
+		});
+	}
+
+
+    res.status(400).json({ 
+        message: "Não há voucher disponível!", 
+        expiresAt: "Não disponível",
+        timeLeft: "Não disponível"
+    });
 });
+
 
 app.listen(3000, () => {
     console.log("Servidor rodando na porta 3000");

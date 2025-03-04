@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle de Vouchers</title>
     <style>
+        /* Estilização da página */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -29,6 +30,7 @@
             color: #333;
         }
 
+        /* Estilização do botão */
         button {
             background-color: #4CAF50;
             color: white;
@@ -43,11 +45,12 @@
             background-color: #45a049;
         }
 
+        /* Estilização das mensagens de sucesso e erro */
         .voucher-info {
             margin-top: 20px;
             font-size: 16px;
         }
-		
+        
 		.success {
 			color: green;
 			font-weight: bold;
@@ -57,57 +60,84 @@
             color: red;
             font-weight: bold;
         }
+        
+        /* Estilização do rodapé com link para o GitHub */
+        footer {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
 
-        /* Mantém o botão sempre visível */
-        #getVoucherButton {
-            display: inline-block;
-            margin-bottom: 10px;
+        footer a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Controle de Vouchers</h1>
+		<!-- Botão para pedir voucher -->
         <button id="getVoucherButton">Pedir Voucher</button>
+        <!-- Área para exibir informações sobre o voucher -->
         <div id="voucherInfo" class="voucher-info"></div>
     </div>
 
     <script>
+        /* Função assíncrona para buscar um voucher do servidor */
 		async function handleVoucherRequest() {
 			try {
-				const response = await fetch("http://localhost:3000/getVoucher");
-				const data = await response.json();
+				const response = await fetch("http://localhost:3000/getVoucher"); // Faz uma requisição GET para obter um voucher
+                const data = await response.json(); // Converte a resposta para JSON
 
-				updateVoucherInfo(data, response.status); // Passa o status HTTP para a função
+                updateVoucherInfo(data, response.status); // Atualiza a interface com os dados
+				
+				// Se houver um voucher válido
+                //if (response.ok) {
+                startCountdown(data.timeLeft); // Inicia a contagem regressiva
+                //}
+            } catch (error) {
+                console.error("Erro ao buscar voucher:", error);
+				// Exibe a mensagem padrão caso ocorra um erro
+                document.getElementById("voucherInfo").innerHTML = "<p class='error'>Erro ao tentar buscar o voucher.</p>";
+            }
+        }
 
-				if (response.ok) {
-					startCountdown(data.timeLeft);
-				}
-
-			} catch (error) {
-				console.error("Erro ao buscar voucher:", error);
-				document.getElementById("voucherInfo").innerHTML = "<p class='error'>Erro ao tentar buscar o voucher.</p>";
-			}
-		}
-
-		function updateVoucherInfo(data, status) {
-			const voucherInfoDiv = document.getElementById("voucherInfo");
-			const isError = status !== 200; // Se não for 200 (sucesso), trata como erro
-
-			voucherInfoDiv.innerHTML = `
+        /* Atualiza as informações do voucher na tela */
+        function updateVoucherInfo(data, status) {
+            const voucherInfoDiv = document.getElementById("voucherInfo");
+            const isError = status !== 200; // Verifica se a resposta foi um erro
+            
+            // Exibir apenas a mensagem de indisponível caso não haja vouchers disponíveis
+            if (status !== 200 && data.message === "Não há voucher disponível!") {
+                voucherInfoDiv.innerHTML = `<p class="error">${data.message}</p>`;
+                return;
+            }
+            
+            // Exibir os dados do voucher na interface
+            voucherInfoDiv.innerHTML = `
 				<p class="${isError ? 'error' : 'success'}">${data.message}</p>
-				<p><strong>Voucher atual:</strong> ${data.voucher || 'Não disponível'}</p>
-				<p><strong>Expira em:</strong> ${data.expiresAt || 'Não disponível'}</p>
-				<p><strong>Tempo restante:</strong> <span id="timeLeft">${data.timeLeft || 'Não disponível'}</span></p>
-				<p><strong>Total de vouchers:</strong> ${data.quantity || 0} de ${data.quantity === 0 ? "00h 00m 00s" : formatTime(data.validity)}</p>
+				<p><strong>Voucher atual: ${data.voucher || 'Não disponível'}</strong></p>
+				<p>Expira em: ${data.expiresAt || 'Não disponível'}</p>
+				<p>Tempo restante: <span id="timeLeft">${data.timeLeft || 'Não disponível'}</span></p>
+				<p>Total de vouchers: ${data.quantity || 0} de ${data.quantity === 0 ? "00h 00m 00s" : formatTime(data.validity)}</p>
 			`;
 		}
 
+        /* Inicia a contagem regressiva do tempo de expiração */
 		function startCountdown(timeLeft) {
-			const timeParts = timeLeft.match(/(\d+)h (\d+)m (\d+)s/);
+			const timeParts = timeLeft.match(/(\d+)h (\d+)m (\d+)s/); // Extrai horas, minutos e segundos do tempo restante
 			if (!timeParts) return;
 
-			let totalSeconds = parseInt(timeParts[1]) * 3600 + parseInt(timeParts[2]) * 60 + parseInt(timeParts[3]);
+			let totalSeconds = parseInt(timeParts[1]) * 3600 + parseInt(timeParts[2]) * 60 + parseInt(timeParts[3]); // Converte para segundos
 
 			const interval = setInterval(() => {
 				if (totalSeconds <= 0) {
@@ -116,24 +146,30 @@
 					return;
 				}
 
-				totalSeconds--;
+				totalSeconds--; // Decrementa o tempo restante
 				let hours = Math.floor(totalSeconds / 3600);
 				let minutes = Math.floor((totalSeconds % 3600) / 60);
 				let seconds = totalSeconds % 60;
 
-				document.getElementById("timeLeft").innerText = `${hours}h ${minutes}m ${seconds}s`;
+				document.getElementById("timeLeft").innerText = `${hours}h ${minutes}m ${seconds}s`; // Atualiza o tempo restante na interface
 			}, 1000);
 		}
+        
+        /* Formata o tempo para exibição no formato "xh ym zs" */
+        function formatTime(time) {
+            const parts = time.split(':'); // Divide a string no formato HH:MM:SS
+            const hours = parseInt(parts[0], 10);
+            const minutes = parseInt(parts[1], 10);
+            const seconds = parseInt(parts[2], 10);
+            return `${hours}h ${minutes}m ${seconds}s`;
+        }
 		
-		function formatTime(time) {
-			const parts = time.split(':');
-			const hours = parseInt(parts[0], 10);
-			const minutes = parseInt(parts[1], 10);
-			const seconds = parseInt(parts[2], 10);
-			return `${hours}h ${minutes}m ${seconds}s`;
-		}
-
+        /* Adiciona um evento de clique ao botão para solicitar um novo voucher */
 		document.getElementById("getVoucherButton").addEventListener("click", handleVoucherRequest);
 	</script>
+    
+    <footer>
+        <p><a href="https://github.com/o0andrefelipe0o" target="_blank">@o0andrefelipe0o</a></p>
+    </footer>
 </body>
 </html>

@@ -32,21 +32,19 @@ let voucherTime = null;
 let voucherValidity = null;
 
 app.get('/getVoucher', (req, res) => {
-    // Lê os vouchers e a validade do arquivo
     const { validity, vouchers } = readVouchersFile();
-	
+
     if (!voucherValidity) {
         voucherValidity = validity;  // Define o tempo de validade global para o primeiro uso
     }
 
     if (activeVoucher && moment().isBefore(voucherTime)) {
-        // Se houver um voucher ativo e o tempo não passou
         let timeLeft = moment(voucherTime).diff(moment(), 'seconds');
         let hours = Math.floor(timeLeft / 3600);
         let minutes = Math.floor((timeLeft % 3600) / 60);
         let seconds = timeLeft % 60;
 
-		// Cálculo do tempo restante
+        // Cálculo do tempo restante
         return res.status(400).json({
             message: "Você ainda tem um voucher ativo!",
             voucher: activeVoucher,
@@ -55,26 +53,24 @@ app.get('/getVoucher', (req, res) => {
         });
     }
 
-    // Pega o próximo voucher da lista
     if (vouchers.length > 0) {
-        activeVoucher = vouchers.pop();  // Retira o último voucher da lista
-        voucherTime = moment().add(moment.duration(voucherValidity));  // Define o tempo de validade do voucher
-        saveVouchersToFile(voucherValidity, vouchers);  // Atualiza o arquivo removendo o voucher retirado
+        activeVoucher = vouchers.pop();
+        voucherTime = moment().add(moment.duration(voucherValidity));
+        saveVouchersToFile(voucherValidity, vouchers);
 
-		// Cálculo do tempo restante
-		let totalSeconds = moment(voucherTime).diff(moment(), 'seconds');
-		let hours = Math.floor(totalSeconds / 3600);
-		let minutes = Math.floor((totalSeconds % 3600) / 60);
-		let seconds = totalSeconds % 60;
+        // Cálculo do tempo restante
+        let totalSeconds = moment(voucherTime).diff(moment(), 'seconds');
+        let hours = Math.floor(totalSeconds / 3600);
+        let minutes = Math.floor((totalSeconds % 3600) / 60);
+        let seconds = totalSeconds % 60;
 
-		return res.json({
-			message: "Voucher ativado com sucesso!",
-			voucher: activeVoucher,
-			expiresAt: voucherTime.format('DD/MM/YYYY [às] HH:mm:ss'),
-			timeLeft: `${hours}h ${minutes}m ${seconds}s`
-		});
-	}
-
+        return res.json({
+            message: "Voucher ativado com sucesso!",
+            voucher: activeVoucher,
+            expiresAt: voucherTime.format('DD/MM/YYYY [às] HH:mm:ss'),
+            timeLeft: `${hours}h ${minutes}m ${seconds}s`
+        });
+    }
 
     res.status(400).json({ 
         message: "Não há voucher disponível!", 
@@ -82,7 +78,6 @@ app.get('/getVoucher', (req, res) => {
         timeLeft: "Não disponível"
     });
 });
-
 
 app.listen(3000, () => {
     console.log("Servidor rodando na porta 3000");

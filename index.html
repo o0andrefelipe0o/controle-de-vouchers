@@ -74,26 +74,56 @@
 
     <script>
         async function handleVoucherRequest() {
-		try {
-			const response = await fetch("http://localhost:3000/getVoucher");
-			const data = await response.json();
-			const voucherInfoDiv = document.getElementById("voucherInfo");
+			try {
+				const response = await fetch("http://localhost:3000/getVoucher");
+				const data = await response.json();
 
-			voucherInfoDiv.innerHTML = `
-				<p class="${response.ok ? 'success' : 'error'}">${data.message}</p>
+				updateVoucherInfo(data, response.status); // Passa o status HTTP para a função
+
+				if (response.ok) {
+					startCountdown(data.timeLeft);
+				}
+
+			} catch (error) {
+				console.error("Erro ao buscar voucher:", error);
+				document.getElementById("voucherInfo").innerHTML = "<p class='error'>Erro ao tentar buscar o voucher.</p>";
+			}
+		}
+
+		function updateVoucherInfo(data, status) {
+			const voucherInfoDiv = document.getElementById("voucherInfo");
+			const isError = status !== 200; // Se não for 200 (sucesso), trata como erro
+
+			voucherInfoDiv.innerHTML = 
+				`<p class="${isError ? 'error' : 'success'}">${data.message}</p>
 				<p><strong>Voucher atual:</strong> ${data.voucher || 'Não disponível'}</p>
 				<p><strong>Expira em:</strong> ${data.expiresAt || 'Não disponível'}</p>
-				<p><strong>Tempo restante:</strong> ${data.timeLeft || 'Não disponível'}</p>
-			`;
-
-		} catch (error) {
-			console.error("Erro ao buscar voucher:", error);
-			document.getElementById("voucherInfo").innerHTML = "<p class='error'>Erro ao tentar buscar o voucher.</p>";
+				<p><strong>Tempo restante:</strong> <span id="timeLeft">${data.timeLeft || 'Não disponível'}</span></p>`;
 		}
-	}
 
-	document.getElementById("getVoucherButton").addEventListener("click", handleVoucherRequest);
-    </script>
+		function startCountdown(timeLeft) {
+			const timeParts = timeLeft.match(/(\d+)h (\d+)m (\d+)s/);
+			if (!timeParts) return;
 
+			let totalSeconds = parseInt(timeParts[1]) * 3600 + parseInt(timeParts[2]) * 60 + parseInt(timeParts[3]);
+
+			const interval = setInterval(() => {
+				if (totalSeconds <= 0) {
+					clearInterval(interval);
+					document.getElementById("timeLeft").innerText = "Expirado";
+					return;
+				}
+
+				totalSeconds--;
+				let hours = Math.floor(totalSeconds / 3600);
+				let minutes = Math.floor((totalSeconds % 3600) / 60);
+				let seconds = totalSeconds % 60;
+
+				document.getElementById("timeLeft").innerText = `${hours}h ${minutes}m ${seconds}s`;
+			}, 1000);
+		}
+
+		document.getElementById("getVoucherButton").addEventListener("click", handleVoucherRequest);
+	</script>
 </body>
 </html>

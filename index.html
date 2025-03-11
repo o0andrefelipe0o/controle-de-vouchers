@@ -12,8 +12,8 @@
             padding: 0;
             background-color: #f4f4f9;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            justify-content: center; /* Centraliza o conteúdo na vertical */
+            align-items: center; /* Centraliza o conteúdo na horizontal */
             height: 100vh;
         }
 
@@ -22,7 +22,7 @@
             background-color: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Fundo levemente escuro */
             width: 300px;
         }
 
@@ -49,6 +49,7 @@
         .voucher-info {
             margin-top: 20px;
             font-size: 16px;
+			min-height: 25px; /* Define um espaço fixo para evitar alterações no tamanho do container */
         }
         
 		.success {
@@ -60,8 +61,85 @@
             color: red;
             font-weight: bold;
         }
-        
+		
+		/* Estilização do ícone de copiar */
+        .copy-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+			float: right; /* Move o botão para o lado direito */
+            display: none; /* Inicialmente escondido */
+        }
+
+        .copy-button:hover {
+            background-color: #45a049;
+        }
+		
+		/* Estilização do ícone de imprimir */
+		.print-button {
+			background-color: #4CAF50;
+			color: white;
+			border: none;
+			padding: 8px 12px;
+			border-radius: 5px;
+			cursor: pointer;
+			font-size: 14px;
+			margin-top: 10px;
+			float: left; /* Move o botão para o lado esquerdo */
+			display: none; /* Inicialmente escondido */
+		}
+
+		.print-button:hover {
+			background-color: #45a049;
+		}
+		
+		/* Estilização do Modal para perguntar se tem certeza que quer retirar um novo voucher */
+		/*
+		.modal {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.3);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.modal-content {
+			background: white;
+			padding: 20px;
+			border-radius: 10px;
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+			text-align: center;
+			width: 280px;
+		}
+
+		.modal-button {
+			background-color: #4CAF50;
+			color: white;
+			border: none;
+			padding: 10px 15px;
+			border-radius: 5px;
+			cursor: pointer;
+			font-size: 14px;
+			margin: 10px 5px;
+		}
+
+		.modal-button:hover {
+			background-color: #45a049;
+		}
+        */
+		
         /* Estilização do rodapé com link para o GitHub */
+		/*
         footer {
             position: absolute;
             bottom: 10px;
@@ -80,77 +158,287 @@
         footer a:hover {
             text-decoration: underline;
         }
+		*/
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Controle de Vouchers</h1>
-		<!-- Botão para pedir voucher -->
-        <button id="getVoucherButton">Pedir Voucher</button>
+		<!-- Botão para retirar voucher -->
+        <button id="getVoucherButton">Retirar voucher</button>
         <!-- Área para exibir informações sobre o voucher -->
         <div id="voucherInfo" class="voucher-info"></div>
+		<!-- Botão para copiar informações -->
+		<button id="copyButton" class="copy-button" onclick="copyVoucherInfo()">📋</button>
+		<!-- Botão para imprimir informações -->
+		<button id="printButton" class="print-button" onclick="printVoucherInfo()">🖨️</button>
+		<!-- Modal de Confirmação -->
+		<!-- 
+		<div id="customModal" class="modal">
+			<div class="modal-content">
+				<p>Deseja retirar um novo voucher?</p>
+				<button id="confirmYes" class="modal-button">Sim</button>
+				<button id="confirmNo" class="modal-button">Não</button>
+			</div>
+		</div>
+		-->
     </div>
 
     <script>
-        /* Função assíncrona para buscar um voucher do servidor */
+		/* Função assíncrona para mostrar um voucher ultimo voucher retirado */
+		async function handleVoucherInformation() {
+			try {
+				const response = await fetch("http://localhost:3000/getVoucherInformation"); // Faz uma requisição GET para obter informações do voucher ativo
+                const data = await response.json(); // Converte a resposta para JSON
+				
+				if (data.message !== "Não há mais voucher disponível!" && data.message !== "Não há voucher disponível!") { // Não reiniciar quando não houver mais vouchers
+					startCountdown(data.timeLeft); // Inicia ou reinicia a contagem regressiva
+				}
+                
+				updateVoucherInfo(data, response.status); // Atualiza a interface com os dados
+				
+            } catch (error) {
+                console.error("Erro ao mostrar voucher:", error);
+				// Exibe a mensagem padrão caso ocorra um erro
+                document.getElementById("voucherInfo").innerHTML = "<p class='error'>Erro, o servidor pode estar off-line!</p>";
+				document.getElementById("copyButton").style.display = "none"; // Esconde o botão de copiar
+				document.getElementById("printButton").style.display = "none"; // Exibe o botão de impressão
+            }
+        }
+		
+	
+        /* Função assíncrona para retirar um voucher do servidor */
 		async function handleVoucherRequest() {
+			const button = document.getElementById("getVoucherButton"); // Permite customizar o botão retirar
+    		button.disabled = true; // Desativa o botão getVoucherButton para evitar cliques repetidos
+
 			try {
 				const response = await fetch("http://localhost:3000/getVoucher"); // Faz uma requisição GET para obter um voucher
                 const data = await response.json(); // Converte a resposta para JSON
-
-                updateVoucherInfo(data, response.status); // Atualiza a interface com os dados
 				
-                startCountdown(data.timeLeft); // Inicia a contagem regressiva
+				if (data.message !== "Não há mais voucher disponível!" && data.message !== "Não há voucher disponível!") { // Não reiniciar quando não houver mais vouchers
+					startCountdown(data.timeLeft); // Inicia ou reinicia a contagem regressiva
+				}
+				
+                updateVoucherInfo(data, response.status); // Atualiza a interface com os dados
+
+				// Remover a mensagem 'data.message' após 5 segundos
+				clearTimeout(timeoutId); // Cancela qualquer timeout anterior
+        		timeoutId = setTimeout(() => {
+					const messageElement = document.getElementById("voucherMessage");
+					if (messageElement) {
+						//messageElement.remove(); // Remove o elemento da DOM
+						messageElement.innerHTML = "&nbsp;"; // Substitui a mensagem por um espaço em branco
+					}
+				}, 5000);
 				
             } catch (error) {
                 console.error("Erro ao buscar voucher:", error);
 				// Exibe a mensagem padrão caso ocorra um erro
-                document.getElementById("voucherInfo").innerHTML = "<p class='error'>Erro ao tentar buscar o voucher.</p>";
-            }
+                document.getElementById("voucherInfo").innerHTML = "<p class='error'>Erro ao tentar retirar voucher!</p>";
+                document.getElementById("copyButton").style.display = "none"; // Esconde o botão de copiar
+				document.getElementById("printButton").style.display = "none"; // Exibe o botão de impressão
+            } finally {
+				setTimeout(() => { // Reativa o botão getVoucherButton após 100 milissegundos
+					button.disabled = false;
+				}, 100);
+			}
         }
 
         /* Atualiza as informações do voucher na tela */
         function updateVoucherInfo(data, status) {
             const voucherInfoDiv = document.getElementById("voucherInfo");
             const isError = status !== 200; // Verifica se a resposta foi um erro
+			// const button = document.getElementById("NOME DO BOTÃO"); // Permite customizar o botão retirar
+			// button.style.display = "none"; // Esconde o botão
+			// button.innerText = "TEXTO DE PREFERÊNCIA"; // Atualiza o texto do botão
+			// button.style.display = "block"; // Garante que o botão seja exibido
+			
+			document.getElementById("getVoucherButton").innerText = "Retirar novo voucher"; // Atualiza o texto do botão
             
             // Exibir apenas a mensagem de indisponível caso não haja vouchers disponíveis
             if (status !== 200 && data.message === "Não há voucher disponível!") {
-                voucherInfoDiv.innerHTML = `<p class="error">${data.message}</p>`;
+                document.getElementById("getVoucherButton").innerText = "Retirar voucher"; // Atualiza o texto do botão
+                voucherInfoDiv.innerHTML = `<p class="error">${data.message || "&nbsp;"}</p>`;
+                document.getElementById("copyButton").style.display = "none"; // Esconde o botão de copiar
+				document.getElementById("printButton").style.display = "none"; // Exibe o botão de impressão
                 return;
             }
+
+			// Se a resposta for um erro e não houver vouchers disponíveis, apenas atualiza a mensagem
+			if (isError && data.message === "Não há mais voucher disponível!") {
+				const voucherMessage = document.getElementById("voucherMessage");
+				
+				if (voucherMessage) {
+					voucherMessage.innerText = data.message; // Apenas atualiza a mensagem
+					voucherMessage.className = "error"; // Mantém a classe de erro
+				} else {
+					// Se a mensagem não existir na interface, cria ela
+					const messageElement = document.createElement("p");
+					messageElement.id = "voucherMessage";
+					messageElement.className = "error";
+					messageElement.innerText = data.message;
+					voucherInfoDiv.appendChild(messageElement);
+				}
+				return; // Sai da função para não sobrescrever o resto da interface
+			}
             
             // Exibir os dados do voucher na interface
             voucherInfoDiv.innerHTML = `
-				<p class="${isError ? 'error' : 'success'}">${data.message}</p>
-				<p><strong>Voucher atual: ${data.voucher || 'Não disponível'}</strong></p>
-				<p>Expira em: ${data.expiresAt || 'Não disponível'}</p>
-				<p>Tempo restante: <span id="timeLeft">${data.timeLeft || 'Não disponível'}</span></p>
-				<p>Total de vouchers: ${data.quantity || 0} de ${data.quantity === 0 ? "00h 00m 00s" : formatTime(data.validity)}</p>
+				<p><strong>Voucher: ${data.voucher}</strong></p>
+				${data.validity === "00:00:00" ? "" : `<p>Expira: ${data.expiresAt}</p>`} <!-- Não mostra essa linha se o tempo do voucher for definido como zero (00:00:00) -->
+				${data.validity === "00:00:00" ? "" : `<p>Tempo: <span id="timeLeft">${data.timeLeft}</span></p>`} <!-- Não mostra essa linha se o tempo do voucher for definido como zero (00:00:00) -->
+                <p>
+                Total: ${data.quantity}
+                ${data.quantity === 1 ? " voucher" : " vouchers"}
+                ${data.quantity > 0 && data.validity !== "00:00:00" 
+                    ? ` de ${formatTime(data.validity)}` 
+                    : ""}
+				<p id="voucherMessage" class="${isError ? 'error' : 'success'}">${data.message || "&nbsp;"}</p>
+                </p> <!-- Não mostra o tempo dos outros vouchers se o tempo for definido como zero (00:00:00) e se não ouver mais vouchers disponíveis -->
 			`;
+
+			// Exibir o botão de copiar somente se houver um voucher
+            if (data.voucher && data.expiresAt) {
+                document.getElementById("copyButton").style.display = "block"; // Exibe o botão de copiar ("inline-block")
+				document.getElementById("printButton").style.display = "block"; // Exibe o botão de impressão ("inline-block")
+            } else {
+                document.getElementById("copyButton").style.display = "none"; // Esconde o botão de copiar
+				document.getElementById("printButton").style.display = "none"; // Exibe o botão de impressão
+            }
 		}
+		
+		/* Função para copiar as informações do voucher */
+        function copyVoucherInfo() {
+            const voucherText = voucherInfo.querySelector("p:nth-of-type(1)").innerText; // Voucher
+            const expiresAtText = voucherInfo.querySelector("p:nth-of-type(2)").innerText; // Expira
+            
+            const textToCopy = expiresAtText.startsWith("Expira: ") 
+			? `${voucherText}\n${expiresAtText}` // Se segunda linha começa com 'Expira: ', copia ela
+			: `${voucherText}`; // Se não, não copia
+
+            // Usando a API Clipboard para copiar o texto
+            navigator.clipboard.writeText(textToCopy)
+                .then(() => {
+                    alert('Informações copiadas para a área de transferência!');
+                })
+                .catch(err => {
+                    console.error('Erro ao copiar:', err);
+                });
+			
+				location.reload(); // Atualiza a página para garantir que os eventos e scripts sejam restaurados
+        }
+		
+		/* Função para imprimir as informações do voucher */
+		function printVoucherInfo() {
+			const originalContent = document.body.innerHTML; // Clona o conteúdo do voucher para não afetar a página original
+			
+			// Obtém as informações específicas do voucher
+			const voucherText = voucherInfo.querySelector("p:nth-of-type(1)").innerText; // Voucher
+    		const expiresAtText = voucherInfo.querySelector("p:nth-of-type(2)").innerText; // Expira
+			/*
+			const timeLeftText = voucherInfo.querySelector("p:nth-of-type(3)").innerText; // Tempo restante
+			const quantityText = voucherInfo.querySelector("p:nth-of-type(4)").innerText; // Quantidade
+			const validityText = voucherInfo.querySelector("p:nth-of-type(5)").innerText; // Validade
+			*/
+
+			// Substitui o conteúdo da página pelo da impressão
+			document.body.innerHTML = `
+				<html>
+				<head>
+					<title>Voucher</title>
+					<style>
+						@media print {
+							body {
+								font-family: Arial, sans-serif; /* Tipo de fonte */
+								margin: 0;
+								padding: 0;
+							}
+							p {
+								font-size: 18px; /* Tamanho da fonte */
+							}
+							/* Ocultar cabeçalho e rodapé padrão da impressão */
+							@page {
+								margin: 0;
+							}
+							/* Remover cabeçalhos e rodapés padrão do navegador */
+							@page {
+								size: auto;
+							}
+							header, footer {
+								display: none;
+							}
+						}
+					</style>
+				</head>
+				<body>
+					<p>
+						<strong>${voucherText}</strong>  <!-- Em negrito -->
+						<br> <!-- Quebra de linha entre os textos -->
+						${expiresAtText.startsWith("Expira: ") ? expiresAtText : ""} <!-- Se segunda linha começa com 'Expira: ', imprime ela -->
+					</p>
+				</body>
+				</html>
+			`;
+
+			window.print(); // Aciona a impressão
+
+			document.body.innerHTML = originalContent; // Restaura o conteúdo original após a impressão
+			
+			location.reload(); // Atualiza a página para garantir que os eventos e scripts sejam restaurados
+		}
+		/*
+		function printVoucherInfo() {
+			// Obtém as informações específicas do voucher
+			const voucherText = voucherInfo.querySelector("p:nth-of-type(2)").innerText; // Voucher: 
+            const expiresAtText = voucherInfo.querySelector("p:nth-of-type(3)").innerText; // Expira: 
+			
+			// Abre a janela de impressão
+			const printWindow = window.open('', '', 'height=682,width=769'); // Abre uma nova janela vazia com largura 769 e a altura 682
+			
+			// Adiciona o conteúdo da página
+			printWindow.document.write('<html><head><title>Voucher</title></head><body>'); // Define um título da aba
+			printWindow.document.write('<p><strong>' + voucherText + '</strong></p>'); // Escreve informação do voucher
+			printWindow.document.write('<p>' + expiresAtText + '</p>'); // Escreve informação do voucher
+			printWindow.document.write('</body></html>'); // Garante que a estrutura HTML esteja bem formada
+			printWindow.document.close(); // Finaliza a escrita no documento
+			
+			printWindow.print(); // Chama a função de impressão automática da janela
+			printWindow.focus(); // Mantém a janela em foco
+			
+			// Fecha a janela após a impressão ou se o usuário cancelar
+			setTimeout(function () {
+				printWindow.close();
+			}, 50); // Com um delay de 50ms respeitando o tempo antes da chamada da função de impressão automática da janela
+		}
+		*/
+		
+		let countdownInterval; /* Variável global para armazenar o intervalo ativo */
+		let timeoutId; // Variável global para armazenar o timeout
 
         /* Inicia a contagem regressiva do tempo de expiração */
 		function startCountdown(timeLeft) {
+			clearInterval(countdownInterval); // Para qualquer contagem regressiva anterior
 			const timeParts = timeLeft.match(/(\d+)h (\d+)m (\d+)s/); // Extrai horas, minutos e segundos do tempo restante
-			if (!timeParts) return;
+			if (!timeParts) return; // Se timeParts for null (caso a string não esteja no formato esperado), a função sai imediatamente (return) para evitar erros
 
 			let totalSeconds = parseInt(timeParts[1]) * 3600 + parseInt(timeParts[2]) * 60 + parseInt(timeParts[3]); // Converte para segundos
 
-			const interval = setInterval(() => {
+			countdownInterval = setInterval(() => {
+				//Se totalSeconds chegar a 0, a contagem para
 				if (totalSeconds <= 0) {
-					clearInterval(interval);
-					document.getElementById("timeLeft").innerText = "Expirado";
+					clearInterval(countdownInterval); // Cancela a execução do setInterval()
+					document.getElementById("timeLeft").innerText = "Expirado"; // Atualiza a interface (innerText) para exibir "Expirado"
 					return;
 				}
 
-				totalSeconds--; // Decrementa o tempo restante
-				let hours = Math.floor(totalSeconds / 3600);
-				let minutes = Math.floor((totalSeconds % 3600) / 60);
-				let seconds = totalSeconds % 60;
+				totalSeconds--; // Decrementa o tempo restante a cada segundo
+				let hours = Math.floor(totalSeconds / 3600); // Hora restante
+				let minutes = Math.floor((totalSeconds % 3600) / 60); // Minutos restantes
+				let seconds = totalSeconds % 60; // Segundos restantes
 
 				document.getElementById("timeLeft").innerText = `${hours}h ${minutes}m ${seconds}s`; // Atualiza o tempo restante na interface
-			}, 1000);
+			}, 1000); // Usa setInterval() para executar um bloco de código a cada 1000ms (1 segundo)
 		}
         
         /* Formata o tempo para exibição no formato "xh ym zs" */
@@ -162,30 +450,109 @@
             return `${hours}h ${minutes}m ${seconds}s`;
         }
 		
-        /* Adiciona um evento de clique ao botão para solicitar um novo voucher */
-		document.getElementById("getVoucherButton").addEventListener("click", handleVoucherRequest);
+		/* Adiciona um evento automático quando a página for carregada para exibir voucher ativo */
+		document.addEventListener("DOMContentLoaded", async () => {
+			await handleVoucherInformation();
+		});
+
+		/* Adiciona um evento de clique ao botão para retirar um novo voucher */
+		//document.getElementById("getVoucherButton").addEventListener("click", handleVoucherRequest);
+		
+        /* Adiciona um evento de clique ao botão para retirar um novo voucher */
+		document.getElementById("getVoucherButton").addEventListener("click", async function () {
+			const button = this; // Referência ao botão
+			
+			try {
+				const response = await fetch("http://localhost:3000/askGetVoucher");
+				const data = await response.json();
+
+				if (data.requireConfirmation) {
+					const confirmar = confirm("Você está retirando um novo voucher!");
+					if (!confirmar) {
+						location.reload(); // Atualiza a página para garantir que os eventos e scripts sejam restaurados
+						return; // Cancela a retirada se o usuário não confirmar
+					}
+				}
+
+				handleVoucherRequest(); // Chama a função para processar o voucher
+
+			} catch (error) {
+				console.error("Erro ao buscar informações do voucher:", error);
+			}
+			
+			/*
+			if (button.textContent.startsWith("Retirar novo")) {
+				// Exibe o modal de confirmação
+				document.getElementById("customModal").style.display = "flex";
+
+				// Evento para o botão "Sim"
+				document.getElementById("confirmYes").onclick = function () {
+					document.getElementById("customModal").style.display = "none";
+					handleVoucherRequest(); // Chama a função se confirmado
+				};
+
+				// Evento para o botão "Não"
+				document.getElementById("confirmNo").onclick = function () {
+					document.getElementById("customModal").style.display = "none";
+				};
+
+				return; // Interrompe a execução para aguardar a resposta do usuário
+			}
+			handleVoucherRequest(); // Chama a função para obter o voucher
+			*/
+		});
+		
+		/* Adiciona um evento chamando a função copyVoucherInfo para copiar os dados do voucher ativo se pressionar 'Ctrl + c'  */
+		document.addEventListener("keydown", function(event) {
+			if (event.ctrlKey && event.key === "c") { // Verifica se Ctrl + c foi pressionado
+				const selectedText = window.getSelection().toString(); // Pega o texto selecionado
+				
+				if (!selectedText) { // Se não houver texto selecionado
+					event.preventDefault(); // Impede o comportamento padrão do Ctrl+C
+					copyVoucherInfo(); // Chama a função de cópia personalizada
+				}
+			}
+		});
+		
+		/* Adiciona um evento chamando a função printVoucherInfo para imprimir os dados do voucher ativo se pressionar 'Ctrl + p'  */
+		document.addEventListener("keydown", function(event) {
+			if (event.ctrlKey && event.key === "p") { // Verifica se Ctrl + p foi pressionado
+				event.preventDefault(); // Impede o comportamento padrão do Ctrl + p
+				printVoucherInfo(); // Chama a função de cópia personalizada
+			}
+		});
 		
 		/* Mantem a página web atualizada com novas informações, mesmo que o servidor tenha sido reiniciado */
 		setInterval(async () => {
 			try {
-				const response = await fetch("http://localhost:3000/healthcheck");
+				// Realiza uma requisição assíncrona para o endpoint "/healthCheck" no servidor local (localhost).
+				const response = await fetch("http://localhost:3000/healthCheck");
+				
+				// Se o servidor está funcionando
 				if (response.ok) {
+					// Extrai o tempo de início do servidor (retornado pelo endpoint) como texto
 					const serverStartTime = await response.text();
+					
+					// Recupera o valor armazenado no sessionStorage, que contém o tempo do último início do servidor (se já tiver sido armazenado em uma visita anterior)
 					const lastLoadTime = sessionStorage.getItem("serverStartTime");
-
+					
+					// Se o tempo atual de início do servidor for diferente do tempo armazenado, significa que o servidor foi reiniciado
 					if (lastLoadTime !== serverStartTime) {
+						// Atualiza o sessionStorage com o novo tempo de início do servidor
 						sessionStorage.setItem("serverStartTime", serverStartTime);
-						location.reload(); // Recarrega a página se o servidor foi reiniciado
+						
+						location.reload(); // Recarrega a página atual se o servidor foi reiniciado
 					}
 				}
 			} catch (error) {
 				console.warn("Erro ao verificar servidor:", error);
 			}
-		}, 5000); // Verifica a cada 5 segundos
+		}, 5000); // A função setInterval é chamada para ser executada a cada 5 segundos (5000ms).
 	</script>
-    
+    <!-- 
     <footer>
-        <p><a href="https://github.com/o0andrefelipe0o" target="_blank">@o0andrefelipe0o</a></p>
+        <p><a href="https://github.com/o0andrefelipe0o/controle-de-vouchers" target="_blank">@o0andrefelipe0o</a></p>
     </footer>
+	 -->
 </body>
 </html>

@@ -1,7 +1,7 @@
+Permitir "Retirar novo": NÃO
 Tempo: 00:00:00
 Quantidade: 3
 Vouchers:
-00:00:00
-94742-17376
-87263-29237
-36473-85322
+A
+B
+C

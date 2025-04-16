@@ -1,4 +1,4 @@
-Permitir "Retirar novo": NÃO
+Permitir "Retirar novo": SIM
 Tempo: 00:00:00
 Quantidade: 3
 Vouchers:

@@ -314,7 +314,7 @@ app.get('/getVoucher', (req, res) => {
         }
     }
 });
-
+/*
 // Inicia o servidor na porta 3000
 initializeVouchersFile(); // Inicializa o arquivo de vouchers, se necessário
 require('dotenv').config();
@@ -322,4 +322,22 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`); // Exibe mensagem no console quando o servidor está ativo
 });
+*/
+initializeVouchersFile(); // Inicializa o arquivo de vouchers, se necessário
+require('dotenv').config();
+const path = require('path');
+const PORT = process.env.PORT || 3000;
+
+// Servir arquivos estáticos (como index.html, CSS, JS etc.)
+app.use(express.static(path.join(__dirname)));
+
+// Rota padrão (opcional se estiver usando arquivos estáticos)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando em http://localhost:${PORT}`);
+});
+
 // npm install dotenv
